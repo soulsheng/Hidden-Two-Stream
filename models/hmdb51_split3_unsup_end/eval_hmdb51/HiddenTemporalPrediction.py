@@ -5,7 +5,7 @@ import math, time
 import cv2
 import scipy.io as sio
 
-def HiddenTemporalPrediction(
+def HiddenTemporalPrediction(rect, 
         vid_name,
         mean_file,
         net,
@@ -16,7 +16,8 @@ def HiddenTemporalPrediction(
         num_samples=25,
         stacked_frames=11
         ):
-
+    
+    
     if num_frames == 0:
         imglist = os.listdir(vid_name)
         duration = len(imglist)
@@ -35,6 +36,14 @@ def HiddenTemporalPrediction(
         for j in range(stacked_frames):
             img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(i*step+j+1 + start_frame))
             img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+            
+            if len(rect):            
+                rect = scaleRect(rect, img.shape, 256, 340)
+                #print( 'rect scale ', rect)
+                img = img[rect[1]:rect[3], rect[0]:rect[2]]
+                #cv2.imshow('img rect', img)
+                #cv2.waitKey(0)
+                
             img = cv2.resize(img, dims[1::-1])
             stacked_list.append(img)
             stacked_flip_list.append(img[:,::-1,:])
@@ -75,11 +84,32 @@ def HiddenTemporalPrediction(
 
     for bb in range(num_batches):
         tBeg = time.time()
-        print('batch ', bb)
         span = range(batch_size*bb, min(rgb.shape[3],batch_size*(bb+1)))
         net.blobs['data'].data[...] = np.transpose(rgb[:,:,:,span], (3,2,1,0))
         output = net.forward()
         prediction[:, span] = np.transpose(output[feature_layer])
-        print('cost time %.1f'%(time.time()-tBeg) )
+        if bb==0:
+            print('batch ', bb)
+            print('cost time %.1f'%(time.time()-tBeg) )
 
     return prediction
+    
+def scaleRect(rect, size, height = 256, width = 340 ):
+    rectNew = rect
+    
+    xCenter = int( (rect[0]+rect[2]+1)*0.5 )
+    yCenter = int( (rect[1]+rect[3]+1)*0.5 )
+    
+    rectNew[0] = xCenter-width/2
+    if rectNew[0]<0: rectNew[0]=0
+    
+    rectNew[2] = xCenter+width/2
+    if rectNew[2]>size[1]: rectNew[2]=size[1]
+       
+    rectNew[1] = yCenter-height/2
+    if rectNew[1]<0: rectNew[1]=0
+    
+    rectNew[3] = yCenter+height/2
+    if rectNew[3]>size[0]: rectNew[3]=size[0]
+    
+    return rectNew
