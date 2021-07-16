@@ -124,3 +124,19 @@ Acknowledgement
 ====================
 
 The code base is borrowed from [TSN](https://github.com/yjxiong/temporal-segment-networks), [DispNet](https://lmb.informatik.uni-freiburg.de/resources/software.php) and [UnsupFlownet](http://scs.ryerson.ca/~jjyu/). Thanks for open sourcing the code.
+
+q1 - no modual caffe
+copy dir caffe in pycaffe including _caffe.pyd in it to site-packages of python env 
+
+q2 - caffe dll missing
+libgflags/glog/opencv/cuda/libopenblas
+
+q3 - pyh5 dll missing
+#import h5py,  just exclude it in demo_hidden.py 
+
+q4 - caffe speed
+batch_size=25, run each batch
+cpu:gpu = 30 : 1.6 s ~=20
+
+q5- caffe Check failed: error == cudaSuccess (2 vs. 0)  out of memory
+resize batch_size 50->25

@@ -1,7 +1,7 @@
 import glob
 import os, sys
 import numpy as np
-import math
+import math, time
 import cv2
 import scipy.io as sio
 
@@ -65,15 +65,21 @@ def HiddenTemporalPrediction(
     rgb = np.transpose(rgb, (1,0,2,3))
     rgb = rgb / 255
 
+    print( 'rgb.shape ', rgb.shape )
+    
     # test
-    batch_size = 50
+    batch_size = 25
     prediction = np.zeros((num_categories,rgb.shape[3]))
     num_batches = int(math.ceil(float(rgb.shape[3])/batch_size))
 
+
     for bb in range(num_batches):
+        tBeg = time.time()
+        print('batch ', bb)
         span = range(batch_size*bb, min(rgb.shape[3],batch_size*(bb+1)))
         net.blobs['data'].data[...] = np.transpose(rgb[:,:,:,span], (3,2,1,0))
         output = net.forward()
         prediction[:, span] = np.transpose(output[feature_layer])
+        print('cost time %.1f'%(time.time()-tBeg) )
 
     return prediction

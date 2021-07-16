@@ -6,7 +6,7 @@ import caffe
 import math
 import cv2
 import scipy.io as sio
-import h5py
+#import h5py
 
 from HiddenTemporalPrediction import HiddenTemporalPrediction
 
@@ -27,13 +27,13 @@ def main():
     # spatial prediction
     model_def_file = '../stack_motionnet_vgg16_deploy.prototxt'
     model_file = '../logs_end/hmdb51_split3_vgg16_hidden.caffemodel'
-    FRAME_PATH = "TODO"
+    FRAME_PATH = "G:/action/hmdb51-sub4-smoke-alike/"
     spatial_net = caffe.Net(model_def_file, model_file, caffe.TEST)
 
-    val_file = "./testlist03.txt"
+    val_file = "./testlistdiy.txt"
     f_val = open(val_file, "r")
     val_list = f_val.readlines()
-    print "we got %d test videos" % len(val_list)
+    print("we got %d test videos" % len(val_list))
 
     start_frame = 0
     num_categories = 51
@@ -68,15 +68,15 @@ def main():
         predict_results_before[line_id, :] = avg_spatial_pred_fc8
         predict_results[line_id, :] = avg_spatial_pred
 
-        print input_video_dir
-        print input_video_label-1, predict_label
+        print( input_video_dir)
+        print( input_video_label-1, predict_label)
 
         line_id += 1
         if predict_label == input_video_label-1:
             correct += 1
 
-    print correct
-    print "prediction accuracy is %4.4f" % (float(correct)/len(val_list))
+    print(correct)
+    print( "prediction accuracy is %4.4f" % (float(correct)/len(val_list)))
 
     spatial_results_before["hidden_prediction_before"] = predict_results_before
     spatial_results["hidden_prediction"] = predict_results

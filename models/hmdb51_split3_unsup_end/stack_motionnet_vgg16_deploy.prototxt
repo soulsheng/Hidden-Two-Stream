@@ -1,6 +1,6 @@
 name: "hidden_deploy"
 input: "data"
-input_dim: 50
+input_dim: 25
 input_dim: 33
 input_dim: 224
 input_dim: 224
