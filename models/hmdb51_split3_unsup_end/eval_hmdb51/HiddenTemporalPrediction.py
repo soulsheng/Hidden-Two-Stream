@@ -5,7 +5,7 @@ import math, time
 import cv2
 import scipy.io as sio
 
-def HiddenTemporalPrediction(rect, 
+def HiddenTemporalPrediction(face_net, 
         vid_name,
         mean_file,
         net,
@@ -33,17 +33,23 @@ def HiddenTemporalPrediction(rect,
     for i in range(num_samples):
         stacked_list = []
         stacked_flip_list = []
+        face_rect = np.zeros(4, np.int)
         for j in range(stacked_frames):
             img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(i*step+j+1 + start_frame))
             img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
             
-            if len(rect):            
-                rect = scaleRect(rect, img.shape, 256, 340)
-                #print( 'rect scale ', rect)
-                img = img[rect[1]:rect[3], rect[0]:rect[2]]
-                #cv2.imshow('img rect', img)
-                #cv2.waitKey(0)
+            if j==0:
+                face_rect = detectFace(face_net, img)  
                 
+            if len(face_rect) and face_rect[2]-face_rect[0]!=0 and face_rect[3]-face_rect[1]!=0 :    
+                rect = scaleRect(face_rect, img.shape, 256, 340)
+                img = img[rect[1]:rect[3], rect[0]:rect[2]]     
+                
+                if j==0:          
+                    print( 'rect scale ', rect)
+                    print( 'img size', img.shape )
+                    cv2.imshow('img rect', img)
+                    cv2.waitKey(0)  
             img = cv2.resize(img, dims[1::-1])
             stacked_list.append(img)
             stacked_flip_list.append(img[:,::-1,:])
@@ -113,3 +119,20 @@ def scaleRect(rect, size, height = 256, width = 340 ):
     if rectNew[3]>size[0]: rectNew[3]=size[0]
     
     return rectNew
+    
+def detectFace(net, frame):
+	box = np.zeros(4)
+	(h, w) = frame.shape[:2]
+	#print( frame.shape[:2] )
+	blob = cv2.dnn.blobFromImage(cv2.resize(frame,(300,300)), 1.0,
+		(300, 300), (104.0, 177.0, 123.0),False,True) 
+	# pass the blob through the network and obtain the detections
+	net.setInput(blob)
+	detections = net.forward()
+ 
+	confidence = detections[0, 0, 0, 2] 
+	if confidence > 0.5: 
+		box = detections[0, 0, 0, 3:7] * np.array([w, h, w, h]) 
+        
+	return box.astype("int")
+    

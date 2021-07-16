@@ -30,6 +30,8 @@ def main():
     FRAME_PATH = "G:/action/hmdb51-sub4-smoke-alike/"
     spatial_net = caffe.Net(model_def_file, model_file, caffe.TEST)
 
+    face_net = net = cv2.dnn.readNetFromCaffe("../face_deploy.prototxt", "../face_res10_300x300_ssd_iter_140000.caffemodel")
+
     val_file = "./testlistdiy.txt"
     f_val = open(val_file, "r")
     val_list = f_val.readlines()
@@ -54,11 +56,8 @@ def main():
         input_video_dir_part = line_info[0]
         input_video_dir = os.path.join(FRAME_PATH, input_video_dir_part[:-4])
         input_video_label = int(line_info[1])
-        
-        rect = getRect(input_video_dir, 'label.txt')
-        print( 'rect ', rect)
-        
-        spatial_prediction = HiddenTemporalPrediction(rect,
+ 
+        spatial_prediction = HiddenTemporalPrediction(face_net, 
                 input_video_dir,
                 spatial_mean_file,
                 spatial_net,
@@ -94,34 +93,5 @@ def main():
     sio.savemat("./hmdb51_split3_hidden_before.mat", spatial_results_before)
     sio.savemat("./hmdb51_split3_hidden.mat", spatial_results)
 
-    
-def getRect(vid_path, label_file='label.txt'):
-
-    label_file = vid_path + '\\' + label_file 
-    
-    if not os.path.exists(label_file):
-        return []
-        
-    fileH = open(label_file, 'r')
-    text_lines = fileH.readlines()
-    fileH.close()
-    
-    _xMin=10000 
-    _yMin=10000 
-    _xMax=0 
-    _yMax=0
-    for line in text_lines:
-        slices = line.split()
-        xMin = int(slices[1])
-        yMin = int(slices[2])
-        xMax = int(slices[3])
-        yMax = int(slices[4])
-        if _xMin>xMin: _xMin=xMin
-        if _yMin>yMin: _yMin=yMin
-        if _xMax<xMax: _xMax=xMax
-        if _yMax<yMax: _yMax=yMax        
-    
-    return [_xMin, _yMin, _xMax, _yMax]
-    
 if __name__ == "__main__":
     main()
