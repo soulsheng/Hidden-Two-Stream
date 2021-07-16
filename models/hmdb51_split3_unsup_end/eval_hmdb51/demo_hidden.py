@@ -35,6 +35,7 @@ def main():
     val_list = f_val.readlines()
     print("we got %d test videos" % len(val_list))
 
+    topN = 5
     start_frame = 0
     num_categories = 51
     feature_layer = 'fc8_vgg16'
@@ -70,6 +71,12 @@ def main():
 
         print( input_video_dir)
         print( input_video_label-1, predict_label)
+        
+        #print( avg_spatial_pred )
+        ids_sort = avg_spatial_pred.argsort()
+        ids_topN = ids_sort[:-(topN+1):-1]
+        print( ids_topN )
+        print( avg_spatial_pred[ids_topN] )
 
         line_id += 1
         if predict_label == input_video_label-1:
