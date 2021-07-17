@@ -29,8 +29,14 @@ def HiddenTemporalPrediction(face_net,
         id = start_frame+i
         img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(id))
         img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+        if img is None:
+            print('failed to open ', id)
+            continue
         frameList.append(img)
-        
+    
+    rect_merge = mergeRect(frameList, face_net)
+    rect_scale = scaleRect(rect_merge, frameList[0].shape, 256, 340)
+    
     # selection
     step = int(math.floor((duration-stacked_frames+1)/num_samples))
     dims = (256,340,stacked_frames*3,num_samples)
@@ -47,15 +53,11 @@ def HiddenTemporalPrediction(face_net,
             #img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
             img = frameList[i*step+j+1]
             #print( i*step+j+1 )
-            if j==0:
-                face_rect = detectFace(face_net, img)  
-                
-            if len(face_rect) and face_rect[2]-face_rect[0]!=0 and face_rect[3]-face_rect[1]!=0 :    
-                rect = scaleRect(face_rect, img.shape, 256, 340)
-                img = img[rect[1]:rect[3], rect[0]:rect[2]]     
+            if 1:
+                img = img[rect_scale[1]:rect_scale[3], rect_scale[0]:rect_scale[2]]     
                 
                 if 0:#j==0:          
-                    print( 'rect scale ', rect)
+                    print( 'rect scale ', rect_scale)
                     print( 'img size', img.shape )
                     cv2.imshow('img rect', img)
                     cv2.waitKey(0)  
@@ -144,4 +146,21 @@ def detectFace(net, frame):
 		box = detections[0, 0, 0, 3:7] * np.array([w, h, w, h]) 
         
 	return box.astype("int")
+
+def mergeRect(frameList, face_net):
+ 
+    _xMin=10000 
+    _yMin=10000 
+    _xMax=0 
+    _yMax=0
+    
+    for i in range( len(frameList) ):
+        #print('img[%d]'%i, frameList[i].shape)
+        face_rect = detectFace(face_net, frameList[i])
+        if _xMin>face_rect[0]: _xMin=face_rect[0]
+        if _yMin>face_rect[1]: _yMin=face_rect[1]
+        if _xMax<face_rect[2]: _xMax=face_rect[2]
+        if _yMax<face_rect[3]: _yMax=face_rect[3]     
+        
+    return  [_xMin, _yMin, _xMax, _yMax]
     
