@@ -57,12 +57,16 @@ def main():
     video_size = (640,480)  
     win_size = (2,1)
     
+    bReadVideo = True
+    
     for line in val_list:
         line_info = line.split(" ")
         input_video_dir_part = line_info[0]
         input_video_dir = os.path.join(FRAME_PATH, input_video_dir_part[:-4])
         input_video_label = int(line_info[1])
  
+        inVideo = cv2.VideoCapture(FRAME_PATH + '/' + input_video_dir_part)
+        
         output_dir = input_video_dir + '/out'
         if not os.path.exists(output_dir):
             os.makedirs( output_dir )
@@ -77,8 +81,11 @@ def main():
         else:
             print('failed ')
         
-        imglist = os.listdir(input_video_dir)
-        frame_total = len(imglist)
+        if bReadVideo:
+            frame_total = int(inVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+        else:
+            imglist = os.listdir(input_video_dir)
+            frame_total = len(imglist)
 
         nStep = 25
                 
@@ -99,7 +106,12 @@ def main():
             for i in range(num_frames):
                 id = start_frame+i
                 img_file = os.path.join(input_video_dir, 'image_{0:04d}.jpg'.format(id))
-                img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+                if bReadVideo:
+                    ret,img = inVideo.read()
+                    if ret == False:
+                        break
+                else:
+                    img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
                 if img is None:
                     print('failed to open ', id)
                     continue
@@ -135,7 +147,8 @@ def main():
                 break
                 
         line_id += 1
-        outVideo.release()        
+        outVideo.release()      
+        inVideo.release()
         print('write video ', outVideoFilename)
         print('labelList =', labelList)
         print('scoreList =', scoreList)
