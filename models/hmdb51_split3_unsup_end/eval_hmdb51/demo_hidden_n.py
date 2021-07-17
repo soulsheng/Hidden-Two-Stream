@@ -37,7 +37,7 @@ def main():
     val_list = f_val.readlines()
     print("we got %d test videos" % len(val_list))
 
-    topN = 5
+    topN = 3
     start_frame = 0
     num_categories = 51
     feature_layer = 'fc8_vgg16'
@@ -89,8 +89,7 @@ def main():
             labelList.append(predict_label)
             print( input_video_dir)
             print( input_video_label-1, predict_label)
-            if predict_label == input_video_label-1:
-                correct += 1
+            
             
             #print( avg_spatial_pred )
             ids_sort = avg_spatial_pred.argsort()
@@ -98,10 +97,13 @@ def main():
             print( ids_topN )
             print( avg_spatial_pred[ids_topN] )
             scoreList.append(avg_spatial_pred[ids_topN[0]]) 
-
+            
+            if input_video_label-1 in ids_topN:
+                correct += 1
+                
         print('labelList =', labelList)
         print('scoreList =', scoreList)
-        print(correct)
+        print('correct = ', correct)
         print( "prediction accuracy is %4.4f" % (float(correct)/nGroup))
 
 if __name__ == "__main__":
