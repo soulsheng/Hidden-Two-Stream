@@ -91,24 +91,48 @@ def isCorrect(avg_spatial_pred, input_video_label, topN, scoreT):
                 
     return bCorrect, avg_spatial_pred[ids_topN[0]]
     
-
-def writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, outPath='./', outVideo=None):
+def getMaxXY(img):
+    
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    pos = np.unravel_index(np.argmax(gray), gray.shape)
+    
+    return pos
+    
+def writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, frameListIR=[], outPath='./', outVideo=None, fact=0.02):
     
     for i in range( len(frameList) ):
         img = frameList[i].copy()
         rect = rectAll[i]
         if bCorrect:
             cv2.rectangle(img, (rect[0],rect[1]), (rect[2],rect[3]), (255, 0, 0), 2 ) 
-            cv2.putText(img, 'smoking', (rect[0],rect[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.2, 
+            cv2.putText(img, 'smoking', (rect[2],rect[1]), cv2.FONT_HERSHEY_SIMPLEX, 1.2, 
             (255, 255, 255), 2) 
         
         #cv2.imshow('out', img)
         #cv2.waitKey(0)
         cv2.imwrite(outPath+'/%04d.jpg'%(i+start_frame), img)
+        
+        imgIR = frameListIR[i].copy()
+        pt = getMaxXY(imgIR)
+        if bCorrect:
+            offsetY = int(imgIR.shape[0]*fact +0.5)
+            offsetX = int(imgIR.shape[1]*fact +0.5)
+            cv2.rectangle(imgIR, (pt[1]-offsetX,pt[0]-offsetY), (pt[1]+offsetX,pt[0]+offsetY), (255, 255, 255), 2 ) 
+            cv2.putText(imgIR, 'cigarette', (pt[1]+offsetX,pt[0]+offsetY), cv2.FONT_HERSHEY_SIMPLEX, 1.2, 
+            (255, 255, 255), 2) 
+            
         if outVideo:
             img_resize_in = cv2.resize(frameList[i], video_size) 
             img_resize_out = cv2.resize(img, video_size) 
             img_resize = np.hstack( (img_resize_in, img_resize_out) )
+            
+            img_resize_inIR = cv2.resize(frameListIR[i], video_size) 
+            img_resize_outIR = cv2.resize(imgIR, video_size) 
+            img_resizeIR = np.hstack( (img_resize_inIR, img_resize_outIR) )
+            
+            img_resize = np.vstack( (img_resize, img_resizeIR) )
+            
             outVideo.write(img_resize)
         
     return

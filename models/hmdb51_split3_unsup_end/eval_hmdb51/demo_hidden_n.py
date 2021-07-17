@@ -39,7 +39,7 @@ def main():
     val_list = f_val.readlines()
     print("we got %d test videos" % len(val_list))
 
-    topN = 5
+    topN = 3
     start_frame = 0
     num_categories = 51
     feature_layer = 'fc8_vgg16'
@@ -55,7 +55,7 @@ def main():
 
     video_fps = 30.0
     video_size = (640,480)  
-    win_size = (2,1)
+    win_size = (2,2)
     
     bReadVideo = True
     
@@ -64,8 +64,21 @@ def main():
         input_video_dir_part = line_info[0]
         input_video_dir = os.path.join(FRAME_PATH, input_video_dir_part[:-4])
         input_video_label = int(line_info[1])
- 
-        inVideo = cv2.VideoCapture(FRAME_PATH + '/' + input_video_dir_part)
+        
+        if bReadVideo:
+            fmt = input_video_dir_part[-3:]
+            inVideo = cv2.VideoCapture(FRAME_PATH + '/' + input_video_dir_part)
+            inVideoIR = cv2.VideoCapture(input_video_dir + 'ir.'+fmt)
+            print('open video ', input_video_dir)
+            if inVideo and inVideoIR:
+                print('success ')
+            else:
+                print('failed ')
+            
+            video_fps = inVideo.get(cv2.CAP_PROP_FPS)
+            width = inVideo.get(cv2.CAP_PROP_FRAME_WIDTH)
+            height = inVideo.get(cv2.CAP_PROP_FRAME_HEIGHT)
+            video_size = ((int)(width/2), (int)(height/2)) 
         
         output_dir = input_video_dir + '/out'
         if not os.path.exists(output_dir):
@@ -83,6 +96,9 @@ def main():
         
         if bReadVideo:
             frame_total = int(inVideo.get(cv2.CAP_PROP_FRAME_COUNT))
+            frame_totalIR = int(inVideoIR.get(cv2.CAP_PROP_FRAME_COUNT))
+            if frame_total>frame_totalIR:
+                frame_total = frame_totalIR
         else:
             imglist = os.listdir(input_video_dir)
             frame_total = len(imglist)
@@ -97,26 +113,36 @@ def main():
         scoreT = 0.8
         print( 'nGroup = frame_total/nStep, %d = %d/%d'%(nGroup, frame_total, nStep) )
         for group in range(nGroup):
+            if group >7: break
             print( '\n' )
             print( 'group id = ', group)
             start_frame = group*nStep
             num_frames = nStep 
                     
             frameList = []
+            frameListIR = []
             for i in range(num_frames):
                 id = start_frame+i
                 img_file = os.path.join(input_video_dir, 'image_{0:04d}.jpg'.format(id))
                 if bReadVideo:
                     ret,img = inVideo.read()
                     if ret == False:
-                        break
+                        break  
+                        
+                    ret,imgIR = inVideoIR.read()                    
+                    if ret == False:
+                        break                       
+                    frameListIR.append(imgIR)
+                    
                 else:
                     img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-                if img is None:
-                    print('failed to open ', id)
-                    continue
-                frameList.append(img)
-            
+                    if img is None:
+                        print('failed to open ', id)
+                        continue
+                    frameList.append(img)
+                
+                frameList.append(img) 
+                
             rect_merge,rectAll = mergeRect(frameList, face_net)
             rect_scale = scaleRect(rect_merge, frameList[0].shape, 256, 340)
             
@@ -141,7 +167,7 @@ def main():
             
             if bCorrect:
                 correct += 1
-            writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, output_dir, outVideo)
+            writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, frameListIR, output_dir, outVideo)
             
             if cv2.waitKey(10) == 27: # 27 = 'esc'
                 break
