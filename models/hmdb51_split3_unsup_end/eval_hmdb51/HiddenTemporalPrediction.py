@@ -24,6 +24,13 @@ def HiddenTemporalPrediction(face_net,
     else:
         duration = num_frames
 
+    frameList = []
+    for i in range(num_frames):
+        id = start_frame+i
+        img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(id))
+        img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+        frameList.append(img)
+        
     # selection
     step = int(math.floor((duration-stacked_frames+1)/num_samples))
     dims = (256,340,stacked_frames*3,num_samples)
@@ -36,9 +43,10 @@ def HiddenTemporalPrediction(face_net,
         stacked_flip_list = []
         face_rect = np.zeros(4, np.int)
         for j in range(stacked_frames):
-            img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(i*step+j+1 + start_frame))
-            img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-            #print( img_file )
+            #img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(i*step+j+1 + start_frame))
+            #img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+            img = frameList[i*step+j+1]
+            #print( i*step+j+1 )
             if j==0:
                 face_rect = detectFace(face_net, img)  
                 
