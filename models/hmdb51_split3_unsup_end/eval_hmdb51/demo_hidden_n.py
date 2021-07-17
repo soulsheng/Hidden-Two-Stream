@@ -37,7 +37,7 @@ def main():
     val_list = f_val.readlines()
     print("we got %d test videos" % len(val_list))
 
-    topN = 3
+    topN = 5
     start_frame = 0
     num_categories = 51
     feature_layer = 'fc8_vgg16'
@@ -68,6 +68,7 @@ def main():
         labelList = []
         scoreList = []
         correct = 0
+        scoreT = 0.8
         print( 'nGroup = frame_total/nStep, %d = %d/%d'%(nGroup, frame_total, nStep) )
         for group in range(nGroup):
             print( '\n' )
@@ -98,8 +99,24 @@ def main():
             print( avg_spatial_pred[ids_topN] )
             scoreList.append(avg_spatial_pred[ids_topN[0]]) 
             
+            ids_topN = ids_topN.tolist()
             if input_video_label-1 in ids_topN:
-                correct += 1
+                index = ids_topN.index( input_video_label-1 )
+                if index == 0:
+                     print('top0')
+                     correct += 1
+                elif index>0:
+                    iStop = 0
+                    for i in range(index):
+                        score = avg_spatial_pred[ ids_topN[i] ]
+                        if score > scoreT:
+                            break
+                        else:
+                            iStop+=1
+                    #print('iStop=%d, index=%d'%(iStop, index) )
+                    if iStop==index:
+                        correct += 1
+                        print('top%d'%index, ids_topN)
                 
         print('labelList =', labelList)
         print('scoreList =', scoreList)
