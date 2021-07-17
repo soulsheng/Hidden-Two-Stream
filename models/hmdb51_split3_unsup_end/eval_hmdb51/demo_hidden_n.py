@@ -57,41 +57,52 @@ def main():
         input_video_dir = os.path.join(FRAME_PATH, input_video_dir_part[:-4])
         input_video_label = int(line_info[1])
  
-        spatial_prediction = HiddenTemporalPrediction(face_net, 
-                input_video_dir,
-                spatial_mean_file,
-                spatial_net,
-                num_categories,
-                feature_layer,
-                start_frame)
-        avg_spatial_pred_fc8 = np.mean(spatial_prediction, axis=1)
-        avg_spatial_pred = np.asarray(softmax(avg_spatial_pred_fc8))
-        predict_label = np.argmax(avg_spatial_pred)
 
-        predict_results_before[line_id, :] = avg_spatial_pred_fc8
-        predict_results[line_id, :] = avg_spatial_pred
+        imglist = os.listdir(input_video_dir)
+        frame_total = len(imglist)
 
-        print( input_video_dir)
-        print( input_video_label-1, predict_label)
+        nStep = 25
+                
+        nGroup = frame_total/nStep
         
-        #print( avg_spatial_pred )
-        ids_sort = avg_spatial_pred.argsort()
-        ids_topN = ids_sort[:-(topN+1):-1]
-        print( ids_topN )
-        print( avg_spatial_pred[ids_topN] )
+        labelList = []
+        scoreList = []
+        correct = 0
+        print( 'nGroup = frame_total/nStep, %d = %d/%d'%(nGroup, frame_total, nStep) )
+        for group in range(nGroup):
+            print( '\n' )
+            print( 'group id = ', group)
+            start_frame = group*nStep
+            num_frames = nStep 
+            spatial_prediction = HiddenTemporalPrediction(face_net, 
+                    input_video_dir,
+                    spatial_mean_file,
+                    spatial_net,
+                    num_categories,
+                    feature_layer,
+                    start_frame,
+                    num_frames)
+            avg_spatial_pred_fc8 = np.mean(spatial_prediction, axis=1)
+            avg_spatial_pred = np.asarray(softmax(avg_spatial_pred_fc8))
+            predict_label = np.argmax(avg_spatial_pred)
 
-        line_id += 1
-        if predict_label == input_video_label-1:
-            correct += 1
+            labelList.append(predict_label)
+            print( input_video_dir)
+            print( input_video_label-1, predict_label)
+            if predict_label == input_video_label-1:
+                correct += 1
+            
+            #print( avg_spatial_pred )
+            ids_sort = avg_spatial_pred.argsort()
+            ids_topN = ids_sort[:-(topN+1):-1]
+            print( ids_topN )
+            print( avg_spatial_pred[ids_topN] )
+            scoreList.append(avg_spatial_pred[ids_topN[0]]) 
 
-    print(correct)
-    print( "prediction accuracy is %4.4f" % (float(correct)/len(val_list)))
-
-    spatial_results_before["hidden_prediction_before"] = predict_results_before
-    spatial_results["hidden_prediction"] = predict_results
-
-    sio.savemat("./hmdb51_split3_hidden_before.mat", spatial_results_before)
-    sio.savemat("./hmdb51_split3_hidden.mat", spatial_results)
+        print('labelList =', labelList)
+        print('scoreList =', scoreList)
+        print(correct)
+        print( "prediction accuracy is %4.4f" % (float(correct)/nGroup))
 
 if __name__ == "__main__":
     main()

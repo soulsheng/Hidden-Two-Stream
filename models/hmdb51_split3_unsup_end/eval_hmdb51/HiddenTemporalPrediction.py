@@ -13,7 +13,7 @@ def HiddenTemporalPrediction(face_net,
         feature_layer,
         start_frame=0,
         num_frames=0,
-        num_samples=25,
+        num_samples=4,
         stacked_frames=11
         ):
     
@@ -29,15 +29,16 @@ def HiddenTemporalPrediction(face_net,
     dims = (256,340,stacked_frames*3,num_samples)
     rgb = np.zeros(shape=dims, dtype=np.float64)
     rgb_flip = np.zeros(shape=dims, dtype=np.float64)
-
+    #print('duration=%d, stacked_frames=%d, num_samples=%d, step=%d'%(duration, stacked_frames, num_samples, step) )
     for i in range(num_samples):
+        #print( 'sample id = ', i)
         stacked_list = []
         stacked_flip_list = []
         face_rect = np.zeros(4, np.int)
         for j in range(stacked_frames):
             img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(i*step+j+1 + start_frame))
             img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-            
+            #print( img_file )
             if j==0:
                 face_rect = detectFace(face_net, img)  
                 
@@ -45,7 +46,7 @@ def HiddenTemporalPrediction(face_net,
                 rect = scaleRect(face_rect, img.shape, 256, 340)
                 img = img[rect[1]:rect[3], rect[0]:rect[2]]     
                 
-                if j==0:          
+                if 0:#j==0:          
                     print( 'rect scale ', rect)
                     print( 'img size', img.shape )
                     cv2.imshow('img rect', img)
@@ -80,10 +81,10 @@ def HiddenTemporalPrediction(face_net,
     rgb = np.transpose(rgb, (1,0,2,3))
     rgb = rgb / 255
 
-    print( 'rgb.shape ', rgb.shape )
+    #print( 'rgb.shape ', rgb.shape )
     
     # test
-    batch_size = 25
+    batch_size = 20
     prediction = np.zeros((num_categories,rgb.shape[3]))
     num_batches = int(math.ceil(float(rgb.shape[3])/batch_size))
 
