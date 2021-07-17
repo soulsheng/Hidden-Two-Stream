@@ -20,6 +20,7 @@ def softmax(x):
 
 def main():
 
+  
     # caffe init
     gpu_id = 0
     caffe.set_device(gpu_id)
@@ -52,6 +53,10 @@ def main():
     spatial_results_before = {}
     spatial_results = {}
 
+    video_fps = 30.0
+    video_size = (640,480)  
+    win_size = (2,1)
+    
     for line in val_list:
         line_info = line.split(" ")
         input_video_dir_part = line_info[0]
@@ -61,6 +66,16 @@ def main():
         output_dir = input_video_dir + '/out'
         if not os.path.exists(output_dir):
             os.makedirs( output_dir )
+            
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        outVideoFilename = '%d.mp4'%line_id 
+        #outVideoFilename = input_video_dir + '/../../../' + input_video_dir_part
+        outVideo = cv2.VideoWriter( outVideoFilename, fourcc, video_fps, (video_size[0]*win_size[0],video_size[1]*win_size[1]) )
+        print('create video ', outVideoFilename)
+        if outVideo:
+            print('success ')
+        else:
+            print('failed ')
         
         imglist = os.listdir(input_video_dir)
         frame_total = len(imglist)
@@ -114,8 +129,14 @@ def main():
             
             if bCorrect:
                 correct += 1
-            writeFrames(frameList, rectAll, bCorrect, start_frame, output_dir)
+            writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, output_dir, outVideo)
             
+            if cv2.waitKey(10) == 27: # 27 = 'esc'
+                break
+                
+        line_id += 1
+        outVideo.release()        
+        print('write video ', outVideoFilename)
         print('labelList =', labelList)
         print('scoreList =', scoreList)
         print('correct = ', correct)

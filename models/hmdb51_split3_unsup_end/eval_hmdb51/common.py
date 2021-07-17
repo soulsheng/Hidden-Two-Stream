@@ -92,10 +92,10 @@ def isCorrect(avg_spatial_pred, input_video_label, topN, scoreT):
     return bCorrect, avg_spatial_pred[ids_topN[0]]
     
 
-def writeFrames(frameList, rectAll, bCorrect, start_frame, outPath='./'):
+def writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, outPath='./', outVideo=None):
     
     for i in range( len(frameList) ):
-        img = frameList[i]
+        img = frameList[i].copy()
         rect = rectAll[i]
         if bCorrect:
             cv2.rectangle(img, (rect[0],rect[1]), (rect[2],rect[3]), (255, 0, 0), 2 ) 
@@ -105,6 +105,11 @@ def writeFrames(frameList, rectAll, bCorrect, start_frame, outPath='./'):
         #cv2.imshow('out', img)
         #cv2.waitKey(0)
         cv2.imwrite(outPath+'/%04d.jpg'%(i+start_frame), img)
-    
+        if outVideo:
+            img_resize_in = cv2.resize(frameList[i], video_size) 
+            img_resize_out = cv2.resize(img, video_size) 
+            img_resize = np.hstack( (img_resize_in, img_resize_out) )
+            outVideo.write(img_resize)
+        
     return
     
