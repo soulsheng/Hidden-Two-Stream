@@ -7,6 +7,7 @@ import math
 import cv2
 import scipy.io as sio
 #import h5py
+from common import *
 
 from HiddenTemporalPrediction import HiddenTemporalPrediction
 
@@ -57,7 +58,10 @@ def main():
         input_video_dir = os.path.join(FRAME_PATH, input_video_dir_part[:-4])
         input_video_label = int(line_info[1])
  
-
+        output_dir = input_video_dir + '/out'
+        if not os.path.exists(output_dir):
+            os.makedirs( output_dir )
+        
         imglist = os.listdir(input_video_dir)
         frame_total = len(imglist)
 
@@ -75,8 +79,22 @@ def main():
             print( 'group id = ', group)
             start_frame = group*nStep
             num_frames = nStep 
-            spatial_prediction = HiddenTemporalPrediction(face_net, 
-                    input_video_dir,
+                    
+            frameList = []
+            for i in range(num_frames):
+                id = start_frame+i
+                img_file = os.path.join(input_video_dir, 'image_{0:04d}.jpg'.format(id))
+                img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
+                if img is None:
+                    print('failed to open ', id)
+                    continue
+                frameList.append(img)
+            
+            rect_merge,rectAll = mergeRect(frameList, face_net)
+            rect_scale = scaleRect(rect_merge, frameList[0].shape, 256, 340)
+            
+            spatial_prediction = HiddenTemporalPrediction(rect_scale, 
+                    frameList,
                     spatial_mean_file,
                     spatial_net,
                     num_categories,
@@ -91,37 +109,18 @@ def main():
             print( input_video_dir)
             print( input_video_label-1, predict_label)
             
+            bCorrect, scoreTop0 = isCorrect(avg_spatial_pred, input_video_label, topN, scoreT)
+            scoreList.append(scoreTop0) 
             
-            #print( avg_spatial_pred )
-            ids_sort = avg_spatial_pred.argsort()
-            ids_topN = ids_sort[:-(topN+1):-1]
-            print( ids_topN )
-            print( avg_spatial_pred[ids_topN] )
-            scoreList.append(avg_spatial_pred[ids_topN[0]]) 
+            if bCorrect:
+                correct += 1
+            writeFrames(frameList, rectAll, bCorrect, start_frame, output_dir)
             
-            ids_topN = ids_topN.tolist()
-            if input_video_label-1 in ids_topN:
-                index = ids_topN.index( input_video_label-1 )
-                if index == 0:
-                     print('top0')
-                     correct += 1
-                elif index>0:
-                    iStop = 0
-                    for i in range(index):
-                        score = avg_spatial_pred[ ids_topN[i] ]
-                        if score > scoreT:
-                            break
-                        else:
-                            iStop+=1
-                    #print('iStop=%d, index=%d'%(iStop, index) )
-                    if iStop==index:
-                        correct += 1
-                        print('top%d'%index, ids_topN)
-                
         print('labelList =', labelList)
         print('scoreList =', scoreList)
         print('correct = ', correct)
         print( "prediction accuracy is %4.4f" % (float(correct)/nGroup))
 
+    
 if __name__ == "__main__":
     main()

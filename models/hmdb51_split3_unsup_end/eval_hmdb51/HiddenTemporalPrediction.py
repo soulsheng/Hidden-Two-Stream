@@ -5,38 +5,19 @@ import math, time
 import cv2
 import scipy.io as sio
 
-def HiddenTemporalPrediction(face_net, 
-        vid_name,
+def HiddenTemporalPrediction(rect_scale, 
+        frameList,
         mean_file,
         net,
         num_categories,
         feature_layer,
         start_frame=0,
-        num_frames=0,
+        duration=0,
         num_samples=4,
         stacked_frames=11
         ):
     
-    
-    if num_frames == 0:
-        imglist = os.listdir(vid_name)
-        duration = len(imglist)
-    else:
-        duration = num_frames
 
-    frameList = []
-    for i in range(num_frames):
-        id = start_frame+i
-        img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(id))
-        img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-        if img is None:
-            print('failed to open ', id)
-            continue
-        frameList.append(img)
-    
-    rect_merge = mergeRect(frameList, face_net)
-    rect_scale = scaleRect(rect_merge, frameList[0].shape, 256, 340)
-    
     # selection
     step = int(math.floor((duration-stacked_frames+1)/num_samples))
     dims = (256,340,stacked_frames*3,num_samples)
@@ -51,7 +32,7 @@ def HiddenTemporalPrediction(face_net,
         for j in range(stacked_frames):
             #img_file = os.path.join(vid_name, 'image_{0:04d}.jpg'.format(i*step+j+1 + start_frame))
             #img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-            img = frameList[i*step+j+1]
+            img = frameList[i*step+j+1].copy()
             #print( i*step+j+1 )
             if 1:
                 img = img[rect_scale[1]:rect_scale[3], rect_scale[0]:rect_scale[2]]     
@@ -110,57 +91,4 @@ def HiddenTemporalPrediction(face_net,
             print('cost time %.1f'%(time.time()-tBeg) )
 
     return prediction
-    
-def scaleRect(rect, size, height = 256, width = 340 ):
-    rectNew = rect
-    
-    xCenter = int( (rect[0]+rect[2]+1)*0.5 )
-    yCenter = int( (rect[1]+rect[3]+1)*0.5 )
-    
-    rectNew[0] = xCenter-width/2
-    if rectNew[0]<0: rectNew[0]=0
-    
-    rectNew[2] = xCenter+width/2
-    if rectNew[2]>size[1]: rectNew[2]=size[1]
-       
-    rectNew[1] = yCenter-height/2
-    if rectNew[1]<0: rectNew[1]=0
-    
-    rectNew[3] = yCenter+height/2
-    if rectNew[3]>size[0]: rectNew[3]=size[0]
-    
-    return rectNew
-    
-def detectFace(net, frame):
-	box = np.zeros(4)
-	(h, w) = frame.shape[:2]
-	#print( frame.shape[:2] )
-	blob = cv2.dnn.blobFromImage(cv2.resize(frame,(300,300)), 1.0,
-		(300, 300), (104.0, 177.0, 123.0),False,True) 
-	# pass the blob through the network and obtain the detections
-	net.setInput(blob)
-	detections = net.forward()
- 
-	confidence = detections[0, 0, 0, 2] 
-	if confidence > 0.5: 
-		box = detections[0, 0, 0, 3:7] * np.array([w, h, w, h]) 
-        
-	return box.astype("int")
-
-def mergeRect(frameList, face_net):
- 
-    _xMin=10000 
-    _yMin=10000 
-    _xMax=0 
-    _yMax=0
-    
-    for i in range( len(frameList) ):
-        #print('img[%d]'%i, frameList[i].shape)
-        face_rect = detectFace(face_net, frameList[i])
-        if _xMin>face_rect[0]: _xMin=face_rect[0]
-        if _yMin>face_rect[1]: _yMin=face_rect[1]
-        if _xMax<face_rect[2]: _xMax=face_rect[2]
-        if _yMax<face_rect[3]: _yMax=face_rect[3]     
-        
-    return  [_xMin, _yMin, _xMax, _yMax]
     
