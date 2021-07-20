@@ -111,7 +111,7 @@ def writeFrames(frameList, rectAll, bCorrect, start_frame, video_size, frameList
         
         #cv2.imshow('out', img)
         #cv2.waitKey(0)
-        cv2.imwrite(outPath+'/%04d.jpg'%(i+start_frame), img)
+        #cv2.imwrite(outPath+'/%04d.jpg'%(i+start_frame), img)
         
         imgIR = frameListIR[i].copy()
         pt = getMaxXY(imgIR)

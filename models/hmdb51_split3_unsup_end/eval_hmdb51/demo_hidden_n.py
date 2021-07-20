@@ -111,9 +111,10 @@ def main():
         scoreList = []
         correct = 0
         scoreT = 0.8
+        time_slice = 5 #0 for all 
         print( 'nGroup = frame_total/nStep, %d = %d/%d'%(nGroup, frame_total, nStep) )
         for group in range(nGroup):
-            if group >7: break
+            if group*nStep >time_slice*video_fps: break
             print( '\n' )
             print( 'group id = ', group)
             start_frame = group*nStep
